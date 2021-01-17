@@ -6,3 +6,4 @@
 * 오목의 규칙 중 하나로, 흑에게만 33/44/장목의 금수 제한을 두는 규칙
 * 금수를 구현하는데 애로사항이 있어서 
 <a href="https://blog.naver.com/PostView.nhn?blogId=dnpc7848&logNo=221506783416&parentCategoryNo=&categoryNo=15&viewDate=&isShowPopularPosts=false&from=postView">여기</a>에 있는 코드를 참고함
+* 좌클릭으로 착수, 우클릭으로 수를 무를 수 있음
