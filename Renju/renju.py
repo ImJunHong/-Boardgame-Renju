@@ -27,7 +27,6 @@ class Game(object):
         self.is_gameover = False
         self.font = pg.font.SysFont("새굴림", 14)
         self.forbiddens = []
-        self.is_end = False
         self.winner = 0
         self.play_game(screen)
 
@@ -79,7 +78,7 @@ class Game(object):
                 self.log.append((board_x, board_y))
                 if self.rule.is_five(board_x, board_y, color=color):
                     self.winner = color
-                    self.is_end = True
+                    self.is_gameover = True
                 else:
                     self.forbiddens = self.rule.check_forbiddens()
 
@@ -103,7 +102,7 @@ class Game(object):
         for event in pg.event.get():
             if event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == 3:
-                    self.is_end = False
+                    self.is_gameover = False
             elif event.type == pg.QUIT:
                 self.end_game()
                 
@@ -113,7 +112,7 @@ class Game(object):
             self.log = []
             self.forbiddens = []
             self.rule = Rule(self.stones, self.log)
-            while not self.is_end:
+            while not self.is_gameover:
                 screen.fill(background_color)
                 self.draw_board(screen)
                 self.check_event(screen)
@@ -121,7 +120,7 @@ class Game(object):
                 self.draw_forbiddens(screen)
                 pg.display.flip()
                 clock.tick(fps)
-            while self.is_end:
+            while self.is_gameover:
                 screen.fill(background_color)
                 self.draw_board(screen)
                 self.draw_stones(screen)
