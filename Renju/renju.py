@@ -43,9 +43,9 @@ class Game(object):
             pg.draw.aaline(screen, black, [margin, margin+cell_size*i], [screen_size-margin, margin+cell_size*i])
             pg.draw.aaline(screen, black, [margin+cell_size*i, margin], [margin+cell_size*i, screen_size-margin])
         
-        pg.draw.circle(screen, black, [margin+cell_size*4, margin+cell_size*4], 3)
-        pg.draw.circle(screen, black, [margin+cell_size*11, margin+cell_size*4], 3)
-        pg.draw.circle(screen, black, [margin+cell_size*4, margin+cell_size*11], 3)
+        pg.draw.circle(screen, black, [margin+cell_size*3, margin+cell_size*3], 3)
+        pg.draw.circle(screen, black, [margin+cell_size*11, margin+cell_size*3], 3)
+        pg.draw.circle(screen, black, [margin+cell_size*3, margin+cell_size*11], 3)
         pg.draw.circle(screen, black, [margin+cell_size*11, margin+cell_size*11], 3)
         pg.draw.circle(screen, black, [margin+cell_size*7, margin+cell_size*7], 3)
         
@@ -69,8 +69,8 @@ class Game(object):
 
     def click(self, screen, pos):
         x, y = pos
-        board_x = (x-margin+cell_size//2)//30
-        board_y = (y-margin+cell_size//2)//30
+        board_x = (x-margin+cell_size//2)//cell_size
+        board_y = (y-margin+cell_size//2)//cell_size
         color = len(self.log)%2+1
         if 0 <= board_x < 15 and 0 <= board_y < 15 and self.stones[board_y][board_x] == 0:
             if (color == 1 and (board_x, board_y) not in self.forbiddens) or color == 2:
