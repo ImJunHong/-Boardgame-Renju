@@ -9,12 +9,13 @@ white            = (255, 255, 255)
 red              = (255,   0,   0)
 grey             = (255, 225, 225, 150)
 pink             = (255, 200, 225)
+lightgreen       = (155, 230, 205)
 
 screen_size = 900
 square_size = 100
 margin = 50
-colors = ["black", "white"]
-pieces = ["pawn", "knight", "rook", "bishop", "queen", "king"]
+color_list = ["black", "white"]
+piece_list = ["pawn", "knight", "rook", "bishop", "queen", "king"]
 
 fps = 60
 clock = pg.time.Clock()
@@ -28,20 +29,27 @@ def main():
 class Player(object):
     def __init__(self, board, color, imgs):
         self.board = board
-        self.color = color # 0 백, 1 흑
-        self.piece_dict = {"pawns":[], "knights":[], "rooks":[], "bishops":[], "queens":[], "king":[]}
+        self.color = color # True 백, False 흑
+        self.piece_dict = {"pawns":[], "knights":[], "rooks":[], "bishops":[], "queens":[], "kings":[]}
         self.set_pieces(imgs)
 
+    def set_loc(self, value):
+        if self.color:
+            return value
+        else:
+            return 7-value
+
     def set_pieces(self, imgs):
-        nums = [0, 1, 7, 6]
+        if self.color: idx = 6
+        else: idx = 0
         for i in range(8):
-            self.piece_dict["pawns"].append(Pawn(self.board, i, nums[self.color*2+1], imgs[self.color*6]))
+            self.piece_dict["pawns"].append(Pawn(self.board, i, self.set_loc(6), self, imgs[idx]))
         for i in range(2):
-            self.piece_dict["knights"].append(Knight(self.board, 5*i+1, nums[self.color*2], imgs[self.color*6+1]))
-            self.piece_dict["rooks"].append(Knight(self.board, 7*i, nums[self.color*2], imgs[self.color*6+2]))
-            self.piece_dict["bishops"].append(Bishop(self.board, 3*i+2, nums[self.color*2], imgs[self.color*6+3]))
-        self.piece_dict["queens"].append(Queen(self.board, 3, nums[self.color*2], imgs[self.color*6+4]))
-        self.piece_dict["king"].append(King(self.board, 4, nums[self.color*2], imgs[self.color*6+5]))
+            self.piece_dict["knights"].append(Knight(self.board, 5*i+1, self.set_loc(7), self, imgs[idx+1]))
+            self.piece_dict["rooks"].append(Rook(self.board, 7*i, self.set_loc(7), self, imgs[idx+2]))
+            self.piece_dict["bishops"].append(Bishop(self.board, 3*i+2, self.set_loc(7), self, imgs[idx+3]))
+        self.piece_dict["queens"].append(Queen(self.board, 3, self.set_loc(7), self, imgs[idx+4]))
+        self.piece_dict["kings"].append(King(self.board, 4, self.set_loc(7), self, imgs[idx+5]))
 
 class Game(object):
     def __init__(self, screen):
@@ -49,7 +57,9 @@ class Game(object):
         self.temp_screen = screen.convert_alpha()
         self.is_gameover = False
         self.winner = 0
+        self.turn = True
         self.selected = None
+        self.selected_movables = None
         self.board = [[None for y in range(8)] for x in range(8)]
         self.font = pg.font.SysFont("새굴림", 14)
         self.imgs = self.load_images()
@@ -58,17 +68,15 @@ class Game(object):
     
     def load_images(self):
         imgs = []
-        for color in colors:
-            for piece in pieces:
+        for color in color_list:
+            for piece in piece_list:
                 imgs.append(pg.transform.scale(pg.image.load("Chess/images/"+color+"_"+piece+".png"), (square_size, square_size)))
         return imgs
 
     def set_players(self):
-        self.white_player = Player(self.board, 0, self.imgs)
-        self.black_player = Player(self.board, 1, self.imgs)
+        self.white_player = Player(self.board, True, self.imgs)
+        self.black_player = Player(self.board, False, self.imgs)
         self.players = [self.white_player, self.black_player]
-        for line in self.board:
-            print(line)
 
     def print_text(self, msg, color, pos):
         textSurface = self.font.render(msg, True, color, None)
@@ -97,9 +105,12 @@ class Game(object):
 
     def draw_selected(self, screen):
         if self.selected:
-            x, y = self.selected
+            x = self.selected.x
+            y = self.selected.y
             pg.draw.rect(screen, pink, [margin+square_size*x, margin+square_size*y, square_size, square_size])
-
+            self.selected_movables = self.selected.get_movables()
+            for mx, my in self.selected_movables:
+                pg.draw.rect(screen, lightgreen, [margin+square_size*mx, margin+square_size*my, square_size, square_size])
 
     def draw_pieces(self, screen):
         for x in range(8):
@@ -109,8 +120,21 @@ class Game(object):
 
     def click(self, screen, pos):
         x, y = self.get_xy(pos)
-        if self.is_valid(x, y) and self.board[y][x]:
-            self.selected = (x, y)
+        if self.is_valid(x, y):
+            if self.selected_movables and (x, y) in self.selected_movables:
+                self.selected.move(x, y)
+                self.selected = None
+                self.selected_movables = None
+                self.turn = not self.turn
+            elif self.board[y][x] and self.board[y][x].color == self.turn:
+                self.selected = self.board[y][x]
+
+        if not self.white_player.piece_dict["kings"]:
+            self.winner = 1
+            self.is_gameover = True
+        elif not self.black_player.piece_dict["kings"]:
+            self.winner = 2
+            self.is_gameover = True
 
     def mouse_over(self, screen):
         x, y = self.get_xy(pg.mouse.get_pos())
@@ -151,13 +175,22 @@ class Game(object):
                 self.draw_pieces(screen)
                 pg.display.flip()
                 clock.tick(fps)
+
             while self.is_gameover:
                 screen.fill(background_color)
                 self.draw_board(screen)
+                self.draw_pieces(screen)
                 self.print_text(f"{['흑', '백'][self.winner-1]} 승리! 다시 시작하려면 아무 곳이나 우클릭하세요", white, [screen_size//2, screen_size-margin//2])
                 self.restart(screen)
                 pg.display.flip()
                 clock.tick(fps)
+
+            self.winner = 0
+            self.turn = True
+            self.selected = None
+            self.selected_movables = None
+            self.board = [[None for y in range(8)] for x in range(8)]
+            self.set_players()
 
         self.end_game()
     
