@@ -6,15 +6,18 @@ class Piece(object):
         self.player = player
         self.color = self.player.color
         self.img = img
+        self.is_moved = False
         self.board[y][x] = self
 
     def move(self, x, y):
         if self.board[y][x]:
-            self.board[y][x].player.piece_dict[self.board[y][x].__class__.__name__.lower()+"s"].remove(self.board[y][x])
+            self.board[y][x].player.piece_dict[self.board[y][x].kind+"s"].remove(self.board[y][x])
         self.board[y][x] = self
         self.board[self.y][self.x] = None
         self.x = x
         self.y = y
+        if not self.is_moved:
+            self.is_moved = True
 
     def is_movable(self, x, y, catchable=True, regardless_of_color=False):
         if x > 0:
@@ -68,7 +71,7 @@ class Piece(object):
 class Pawn(Piece):
     def __init__(self, board, x, y, player, img):
         super().__init__(board, x, y, player, img)
-        self.is_first_move = True
+        self.kind = "pawn"
 
     def get_movables(self):
         movables = []
@@ -76,7 +79,7 @@ class Pawn(Piece):
         coord = self.is_movable(0, -1, catchable=False)
         if coord: movables.append(coord)
         # 첫 번째 행마일 경우 앞으로 두 칸 이동 가능
-        if self.is_first_move:
+        if not self.is_moved:
             coord = self.is_movable(0, -2, catchable=False)
             if coord:
                 cx, cy = coord
@@ -96,12 +99,11 @@ class Pawn(Piece):
 
         return movables
 
-    def move(self, x, y):
-        super().move(x, y)
-        if self.is_first_move:
-            self.is_first_move = False
-
 class Knight(Piece):
+    def __init__(self, board, x, y, player, img):
+        super().__init__(board, x, y, player, img)
+        self.kind = "knight"
+
     def get_movables(self):
         movables = []
         coords = [(1, -2), (2, -1), (2, 1), (1, 2), (-1, 2), (-2, 1), (-2, -1), (-1, -2)]
@@ -111,6 +113,10 @@ class Knight(Piece):
         return movables
 
 class Rook(Piece):
+    def __init__(self, board, x, y, player, img):
+        super().__init__(board, x, y, player, img)
+        self.kind = "rook"
+
     def get_movables(self):
         movables = []
         coords = []
@@ -153,6 +159,10 @@ class Rook(Piece):
         return movables
 
 class Bishop(Piece):
+    def __init__(self, board, x, y, player, img):
+        super().__init__(board, x, y, player, img)
+        self.kind = "bishop"
+        
     def get_movables(self):
         movables = []
         coords = []
@@ -203,6 +213,10 @@ class Bishop(Piece):
         return movables
 
 class Queen(Piece):
+    def __init__(self, board, x, y, player, img):
+        super().__init__(board, x, y, player, img)
+        self.kind = "queen"
+        
     def get_movables(self):
         movables = []
         movables += Rook(self.board, self.x, self.y, self.player, self.img).get_movables()
@@ -211,6 +225,11 @@ class Queen(Piece):
         return movables
 
 class King(Piece):
+    def __init__(self, board, x, y, player, img):
+        super().__init__(board, x, y, player, img)
+        self.kind = "king"
+        self.is_castled = False
+        
     def get_movables(self):
         movables = []
         coords = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]

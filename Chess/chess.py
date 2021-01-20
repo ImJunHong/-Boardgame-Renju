@@ -10,6 +10,7 @@ red              = (255,   0,   0)
 grey             = (255, 225, 225, 150)
 pink             = (255, 200, 225)
 lightgreen       = (155, 230, 205)
+yellow           = (250, 225,  20)
 
 screen_size = 900
 square_size = 100
@@ -61,6 +62,7 @@ class Game(object):
         self.selected = None
         self.selected_movables = None
         self.board = [[None for y in range(8)] for x in range(8)]
+        self.log = []
         self.font = pg.font.SysFont("새굴림", 14)
         self.imgs = self.load_images()
         self.set_players()
@@ -110,7 +112,10 @@ class Game(object):
             pg.draw.rect(screen, pink, [margin+square_size*x, margin+square_size*y, square_size, square_size])
             self.selected_movables = self.selected.get_movables()
             for mx, my in self.selected_movables:
-                pg.draw.rect(screen, lightgreen, [margin+square_size*mx, margin+square_size*my, square_size, square_size])
+                if self.board[my][mx] and self.board[my][mx].kind == "king":
+                    pg.draw.rect(screen, yellow, [margin+square_size*mx, margin+square_size*my, square_size, square_size])
+                else:
+                    pg.draw.rect(screen, lightgreen, [margin+square_size*mx, margin+square_size*my, square_size, square_size])
 
     def draw_pieces(self, screen):
         for x in range(8):
@@ -122,10 +127,18 @@ class Game(object):
         x, y = self.get_xy(pos)
         if self.is_valid(x, y):
             if self.selected_movables and (x, y) in self.selected_movables:
+                catched = None
+                was_moved = True
+                if self.board[y][x]: catched = self.board[y][x]
+                previous_location = (self.selected.x, self.selected.y)
+                if not self.selected.is_moved:
+                    was_moved = False
                 self.selected.move(x, y)
                 self.selected = None
                 self.selected_movables = None
                 self.turn = not self.turn
+                self.log.append([previous_location, (x, y), catched, was_moved])
+                
             elif self.board[y][x] and self.board[y][x].color == self.turn:
                 self.selected = self.board[y][x]
 
@@ -143,7 +156,24 @@ class Game(object):
             screen.blit(self.temp_screen, (0, 0))
 
     def undo(self):
-        pass
+        if self.log:
+            prev = self.log.pop()
+            px, py = prev[0]
+            cx, cy = prev[1]
+            moved_piece = self.board[cy][cx]
+            self.board[py][px] = moved_piece
+            self.board[py][px].x = px
+            self.board[py][px].y = py
+            if not prev[3]:
+                self.board[py][px].is_moved = False
+            self.board[cy][cx] = prev[2]
+            if prev[2]:
+                self.board[cy][cx].player.piece_dict[self.board[cy][cx].kind+"s"].append(self.board[cy][cx])
+                self.board[cy][cx].x = cx
+                self.board[cy][cx].y = cy
+            self.turn = not self.turn
+            self.selected = []
+            self.selected_movables = []
 
     def check_event(self, screen):
         for event in pg.event.get():
@@ -190,6 +220,7 @@ class Game(object):
             self.selected = None
             self.selected_movables = None
             self.board = [[None for y in range(8)] for x in range(8)]
+            self.log = []
             self.set_players()
 
         self.end_game()
