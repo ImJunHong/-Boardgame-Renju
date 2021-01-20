@@ -10,6 +10,7 @@ red              = (255,   0,   0)
 grey             = (255, 225, 225, 150)
 pink             = (255, 200, 225)
 lightgreen       = (155, 230, 205)
+brightgreen      = (155, 255, 205)
 yellow           = (250, 225,  20)
 
 screen_size = 900
@@ -61,6 +62,7 @@ class Game(object):
         self.turn = True
         self.selected = None
         self.selected_movables = None
+        self.castleables = None
         self.board = [[None for y in range(8)] for x in range(8)]
         self.log = []
         self.font = pg.font.SysFont("새굴림", 14)
@@ -78,7 +80,8 @@ class Game(object):
     def set_players(self):
         self.white_player = Player(self.board, True, self.imgs)
         self.black_player = Player(self.board, False, self.imgs)
-        self.players = [self.white_player, self.black_player]
+        self.white_player.opponent = self.black_player
+        self.black_player.opponent = self.white_player
 
     def print_text(self, msg, color, pos):
         textSurface = self.font.render(msg, True, color, None)
@@ -91,6 +94,10 @@ class Game(object):
         x = (x-margin)//square_size
         y = (y-margin)//square_size
         return x, y
+
+    def set_xy(self, x, y):
+        self.board[y][x].x = x
+        self.board[y][x].y = y
 
     def is_valid(self, x, y):
         if 0 <= x < 8 and 0 <= y < 8:
@@ -110,12 +117,20 @@ class Game(object):
             x = self.selected.x
             y = self.selected.y
             pg.draw.rect(screen, pink, [margin+square_size*x, margin+square_size*y, square_size, square_size])
+
             self.selected_movables = self.selected.get_movables()
             for mx, my in self.selected_movables:
                 if self.board[my][mx] and self.board[my][mx].kind == "king":
                     pg.draw.rect(screen, yellow, [margin+square_size*mx, margin+square_size*my, square_size, square_size])
                 else:
                     pg.draw.rect(screen, lightgreen, [margin+square_size*mx, margin+square_size*my, square_size, square_size])
+
+            if self.selected.kind == "king":
+                self.castleables = self.selected.is_castleable()
+                if self.castleables:
+                    for x, y in self.castleables:
+                        pg.draw.rect(screen, brightgreen, [margin+square_size*x, margin+square_size*y, square_size, square_size])
+                        self.print_text("Castling", black, [margin+square_size*x+square_size//2, margin+square_size*y+square_size//2])
 
     def draw_pieces(self, screen):
         for x in range(8):
@@ -126,21 +141,34 @@ class Game(object):
     def click(self, screen, pos):
         x, y = self.get_xy(pos)
         if self.is_valid(x, y):
-            if self.selected_movables and (x, y) in self.selected_movables:
-                catched = None
-                was_moved = True
-                if self.board[y][x]: catched = self.board[y][x]
-                previous_location = (self.selected.x, self.selected.y)
-                if not self.selected.is_moved:
-                    was_moved = False
-                self.selected.move(x, y)
+            if self.board[y][x] and self.board[y][x].color == self.turn:
+                self.selected = self.board[y][x]
+            else:
+                if self.selected_movables and (x, y) in self.selected_movables:
+                    catched = None
+                    was_moved = True
+                    if self.board[y][x]: catched = self.board[y][x]
+                    previous_location = (self.selected.x, self.selected.y)
+                    if not self.selected.is_moved:
+                        was_moved = False
+                    self.selected.move(x, y)
+                    self.turn = not self.turn
+                    self.log.append([previous_location, (x, y), catched, was_moved])
+                elif self.castleables and (x, y) in self.castleables:
+                    # 퀸 사이드 캐슬링
+                    if x == 2:
+                        previous_location = (self.selected.x, self.selected.y, 0)
+                        self.board[y][0].move(3, y)
+                    # 킹 사이드 캐슬링
+                    else:
+                        previous_location = (self.selected.x, self.selected.y, 7)
+                        self.board[y][7].move(5, y)
+                    self.selected.move(x, y)
+                    self.turn = not self.turn
+                    self.log.append([previous_location, (x, y)])
                 self.selected = None
                 self.selected_movables = None
-                self.turn = not self.turn
-                self.log.append([previous_location, (x, y), catched, was_moved])
-                
-            elif self.board[y][x] and self.board[y][x].color == self.turn:
-                self.selected = self.board[y][x]
+                self.castleables = None             
 
         if not self.white_player.piece_dict["kings"]:
             self.winner = 1
@@ -158,22 +186,37 @@ class Game(object):
     def undo(self):
         if self.log:
             prev = self.log.pop()
-            px, py = prev[0]
-            cx, cy = prev[1]
-            moved_piece = self.board[cy][cx]
-            self.board[py][px] = moved_piece
-            self.board[py][px].x = px
-            self.board[py][px].y = py
-            if not prev[3]:
-                self.board[py][px].is_moved = False
-            self.board[cy][cx] = prev[2]
-            if prev[2]:
-                self.board[cy][cx].player.piece_dict[self.board[cy][cx].kind+"s"].append(self.board[cy][cx])
-                self.board[cy][cx].x = cx
-                self.board[cy][cx].y = cy
+            if len(prev[0]) == 2:
+                px, py = prev[0]
+                cx, cy = prev[1]
+                moved_piece = self.board[cy][cx]
+                self.board[py][px] = moved_piece
+                self.set_xy(px, py)
+                if not prev[3]:
+                    self.board[py][px].is_moved = False
+                self.board[cy][cx] = prev[2]
+                if prev[2]:
+                    self.board[cy][cx].player.piece_dict[self.board[cy][cx].kind+"s"].append(self.board[cy][cx])
+                    self.set_xy(cx, cy)
+            else:
+                kx, ky, rx = prev[0]
+                cx, cy = prev[1]
+                self.board[ky][kx] = self.board[cy][cx]
+                self.board[cy][cx] = None
+                self.set_xy(kx, ky)
+                self.board[ky][kx].is_moved = False
+                if rx == 0:
+                    self.board[ky][rx] = self.board[ky][3]
+                    self.board[ky][3] = None
+                else:
+                    self.board[ky][rx] = self.board[ky][5]
+                    self.board[ky][5] = None
+                self.set_xy(rx, ky)
+                self.board[ky][rx].is_moved = False
             self.turn = not self.turn
-            self.selected = []
-            self.selected_movables = []
+            self.selected = None
+            self.selected_movables = None
+            self.castleables = None
 
     def check_event(self, screen):
         for event in pg.event.get():
@@ -219,6 +262,7 @@ class Game(object):
             self.turn = True
             self.selected = None
             self.selected_movables = None
+            self.castleables = None
             self.board = [[None for y in range(8)] for x in range(8)]
             self.log = []
             self.set_players()

@@ -228,7 +228,6 @@ class King(Piece):
     def __init__(self, board, x, y, player, img):
         super().__init__(board, x, y, player, img)
         self.kind = "king"
-        self.is_castled = False
         
     def get_movables(self):
         movables = []
@@ -237,3 +236,47 @@ class King(Piece):
             coord = self.is_movable(cx, cy)
             if coord: movables.append(coord)
         return movables
+
+    def is_castleable(self):
+        # 킹이 한 번도 움직이지 않았을 때
+        if not self.is_moved:
+            # 킹의 체크 여부 확인
+            if self.is_attacked(4, self.get_loc(7)):
+                return False
+            rooks = self.player.piece_dict["rooks"]
+            castleable_rooks = []
+            for rook in rooks:
+                # 룩이 한 번도 움직이지 않았을 때
+                if not rook.is_moved:
+                    castleable_rooks.append(rook)
+            coords = []
+            for rook in castleable_rooks:
+                y = self.get_loc(7)
+                # 퀸 사이드 캐슬링
+                if rook.x == 0:
+                    count = 0
+                    for x in range(1, 4):
+                        if self.board[y][x] == None:
+                            count += 1
+                    # 킹이 이동하는 경로가 공격당하는지 여부 확인
+                    if count == 3 and not self.is_attacked(2, y) and not self.is_attacked(3, y):
+                        coords.append((2, y))
+                # 킹 사이드 캐슬링
+                else:
+                    count = 0
+                    for x in range(5, 7):
+                        if self.board[y][x] == None:
+                            count += 1
+                    # 킹이 이동하는 경로가 공격당하는지 여부 확인
+                    if count == 2 and not self.is_attacked(5, y) and not self.is_attacked(6, y):
+                        coords.append((6, y))
+        else:
+            return False
+        return coords
+
+    def is_attacked(self, x, y):
+        for pieces in self.player.opponent.piece_dict.values():
+            for piece in pieces:
+                if (x, y) in piece.get_movables():
+                    return True
+        return False
