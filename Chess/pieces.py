@@ -99,6 +99,13 @@ class Pawn(Piece):
 
         return movables
 
+    def is_promotionable(self, movables):
+        promotionables = []
+        for x, y in movables:
+            if y == self.get_loc(0):
+                promotionables.append((x, y))
+        return promotionables
+
 class Knight(Piece):
     def __init__(self, board, x, y, player, img):
         super().__init__(board, x, y, player, img)
