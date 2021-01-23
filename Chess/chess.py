@@ -152,7 +152,7 @@ class Game(object):
                 self.selected = self.board[y][x]
             else:
                 if self.selected_movables and (x, y) in self.selected_movables:
-                    if self.promotionables and (x, y) in self.promotionables and self.board[y][x].kind != "king":
+                    if self.promotionables and (x, y) in self.promotionables and (not self.board[y][x] or self.board[y][x].kind != "king"):
                         catched = None
                         if self.board[y][x]: catched = self.board[y][x]
                         previous_location = (self.selected.x, self.selected.y)
@@ -225,7 +225,7 @@ class Game(object):
     def mouse_over_above_pieces(self, screen):
         x, y = self.get_xy(pg.mouse.get_pos())
         if self.is_valid(x, y):
-            if self.promotionables and (x, y) in self.promotionables and self.board[y][x].kind != "king":
+            if self.promotionables and (x, y) in self.promotionables and (not self.board[y][x] or self.board[y][x].kind != "king"):
                 mx, my = pg.mouse.get_pos()
                 nx = (mx - self.get_original(x))//(square_size//2)
                 ny = (my - self.get_original(y))//(square_size//2)
