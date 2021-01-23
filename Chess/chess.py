@@ -65,6 +65,7 @@ class Game(object):
         self.selected_movables = None
         self.castleables = None
         self.promotionables = None
+        self.en_passant = None
         self.board = [[None for y in range(8)] for x in range(8)]
         self.log = []
         self.font = pg.font.SysFont("새굴림", 14)
@@ -138,6 +139,12 @@ class Game(object):
                         self.print_text("Castling", black, [self.get_original(x)+square_size//2, self.get_original(y)+square_size//2])
             elif self.selected.kind == "pawn":
                 self.promotionables = self.selected.is_promotionable(self.selected_movables)
+                if self.log:
+                    self.en_passant = self.selected.is_en_passantable(self.log[-1])
+                    if self.en_passant:
+                        x, y = self.en_passant
+                        pg.draw.rect(screen, lime, [self.get_original(x), self.get_original(y), square_size, square_size])
+                        self.print_text("En Passant", black, [self.get_original(x)+square_size//2, self.get_original(y)+square_size//2])
 
     def draw_pieces(self, screen):
         for x in range(8):
@@ -153,8 +160,8 @@ class Game(object):
             else:
                 if self.selected_movables and (x, y) in self.selected_movables:
                     if self.promotionables and (x, y) in self.promotionables and (not self.board[y][x] or self.board[y][x].kind != "king"):
-                        catched = None
-                        if self.board[y][x]: catched = self.board[y][x]
+                        captured = None
+                        if self.board[y][x]: captured = self.board[y][x]
                         previous_location = (self.selected.x, self.selected.y)
                         self.selected.move(x, y)
 
@@ -181,17 +188,25 @@ class Game(object):
                             self.board[y][x].player.piece_dict["bishops"].append(self.board[y][x])
                         
                         self.turn = not self.turn
-                        self.log.append([previous_location, (x, y), catched])
+                        self.log.append([previous_location, (x, y), captured, "promotion"])
                     else:
-                        catched = None
+                        captured = None
                         was_moved = True
-                        if self.board[y][x]: catched = self.board[y][x]
+                        if self.board[y][x]: captured = self.board[y][x]
                         previous_location = (self.selected.x, self.selected.y)
                         if not self.selected.is_moved:
                             was_moved = False
                         self.selected.move(x, y)
                         self.turn = not self.turn
-                        self.log.append([previous_location, (x, y), catched, was_moved])
+                        self.log.append([previous_location, (x, y), captured, was_moved, "normal"])
+                elif (x, y) == self.en_passant:
+                    previous_location = (self.selected.x, self.selected.y)
+                    self.selected.move(x, y)
+                    captured = self.board[y+self.selected.get_dis(1)][x]
+                    self.board[captured.y][captured.x] = None
+                    captured.player.piece_dict["pawns"].remove(captured)
+                    self.turn = not self.turn
+                    self.log.append([previous_location, (x, y), captured, "en_passant"])
                 elif self.castleables and (x, y) in self.castleables:
                     # 퀸 사이드 캐슬링
                     if x == 2:
@@ -203,11 +218,12 @@ class Game(object):
                         self.board[y][7].move(5, y)
                     self.selected.move(x, y)
                     self.turn = not self.turn
-                    self.log.append([previous_location, (x, y)])
+                    self.log.append([previous_location, (x, y), "castling"])
                 self.selected = None
                 self.selected_movables = None
                 self.castleables = None
                 self.promotionables = None
+                self.en_passant = None
                 
         if not self.white_player.piece_dict["kings"]:
             self.winner = 1
@@ -243,8 +259,7 @@ class Game(object):
     def undo(self):
         if self.log:
             prev = self.log.pop()
-            # 일반적인 행마
-            if len(prev) == 4:
+            if prev[-1] == "normal":
                 px, py = prev[0]
                 cx, cy = prev[1]
                 moved_piece = self.board[cy][cx]
@@ -256,8 +271,7 @@ class Game(object):
                 if prev[2]:
                     prev[2].player.piece_dict[prev[2].kind+"s"].append(prev[2])
                     self.set_xy(cx, cy)
-            # 프로모션
-            elif len(prev) == 3:
+            elif prev[-1] == "promotion":
                 px, py = prev[0]
                 cx, cy = prev[1]
                 if self.board[cy][cx].color: color = 6
@@ -270,8 +284,7 @@ class Game(object):
                 if prev[2]:
                     prev[2].player.piece_dict[prev[2].kind+"s"].append(prev[2])
                     self.set_xy(cx, cy)
-            # 캐슬링
-            else:
+            elif prev[-1] == "castling":
                 kx, ky, rx = prev[0]
                 cx, cy = prev[1]
                 self.board[ky][kx] = self.board[cy][cx]
@@ -286,10 +299,22 @@ class Game(object):
                     self.board[ky][5] = None
                 self.set_xy(rx, ky)
                 self.board[ky][rx].is_moved = False
+            elif prev[-1] == "en_passant":
+                px, py = prev[0]
+                cx, cy = prev[1]
+                moved_piece = self.board[cy][cx]
+                self.board[py][px] = moved_piece
+                self.set_xy(px, py)
+                self.board[cy][cx] = None
+                captured = prev[2]
+                self.board[captured.y][captured.x] = captured
+                captured.player.piece_dict[captured.kind+"s"].append(captured)
+
             self.turn = not self.turn
             self.selected = None
             self.selected_movables = None
             self.castleables = None
+            self.en_passant = None
 
     def check_event(self, screen):
         for event in pg.event.get():
@@ -338,6 +363,7 @@ class Game(object):
             self.selected_movables = None
             self.castleables = None
             self.promotionables = None
+            self.en_passant = None
             self.board = [[None for y in range(8)] for x in range(8)]
             self.log = []
             self.set_players()

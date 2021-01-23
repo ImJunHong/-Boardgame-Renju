@@ -106,6 +106,14 @@ class Pawn(Piece):
                 promotionables.append((x, y))
         return promotionables
 
+    def is_en_passantable(self, log):
+        if log[-1] == "normal":
+            py = log[0][1]
+            cx, cy = log[1]
+            if abs(py-cy) == 2 and ((self.x, self.y) == (cx-1, cy) or (self.x, self.y) == (cx+1, cy)):
+                return cx, (py+cy)//2
+        return None
+
 class Knight(Piece):
     def __init__(self, board, x, y, player, img):
         super().__init__(board, x, y, player, img)
