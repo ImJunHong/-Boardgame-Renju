@@ -14,9 +14,9 @@ lime             = (191, 255,   0)
 yellow           = (250, 225,  20)
 purple           = (128,   0, 128)
 
-screen_size = 900
-square_size = 100
-margin = 50
+scr_size = 900
+sq_size = 100
+mg = 50
 color_list = ["black", "white"]
 piece_list = ["pawn", "knight", "rook", "bishop", "queen", "king"]
 
@@ -25,7 +25,7 @@ clock = pg.time.Clock()
 
 def main():
     pg.init()
-    screen = pg.display.set_mode([screen_size, screen_size])
+    screen = pg.display.set_mode([scr_size, scr_size])
     pg.display.set_caption("Chess")
     game = Game(screen)
 
@@ -61,11 +61,7 @@ class Game(object):
         self.is_gameover = False
         self.winner = 0
         self.turn = True
-        self.selected = None
-        self.selected_movables = None
-        self.castleables = None
-        self.promotionables = None
-        self.en_passant = None
+        self.initialize_variables()
         self.board = [[None for y in range(8)] for x in range(8)]
         self.log = []
         self.font = pg.font.SysFont("새굴림", 14)
@@ -77,7 +73,7 @@ class Game(object):
         imgs = []
         for color in color_list:
             for piece in piece_list:
-                imgs.append(pg.transform.scale(pg.image.load("Chess/images/"+color+"_"+piece+".png"), (square_size, square_size)))
+                imgs.append(pg.transform.scale(pg.image.load("Chess/images/"+color+"_"+piece+".png"), (sq_size, sq_size)))
         return imgs
 
     def set_players(self):
@@ -92,18 +88,31 @@ class Game(object):
         textRect.center = pos
         self.screen.blit(textSurface, textRect)
 
+    def initialize_variables(self):
+        self.selected = None
+        self.selected_movables = None
+        self.castleables = None
+        self.promotionables = None
+        self.en_passant = None
+
     def get_xy(self, pos):
         x, y = pos
-        x = (x-margin)//square_size
-        y = (y-margin)//square_size
+        x = (x-mg)//sq_size
+        y = (y-mg)//sq_size
         return x, y
-
-    def get_original(self, x):
-        return margin + x*square_size
 
     def set_xy(self, x, y):
         self.board[y][x].x = x
         self.board[y][x].y = y
+
+    def real_xy(self, x):
+        return mg + x*sq_size
+
+    def add_to_dict(self, piece):
+        piece.player.piece_dict[piece.kind+"s"].append(piece)
+
+    def remove_from_dict(self, piece):
+        piece.player.piece_dict[piece.kind+"s"].remove(piece)
 
     def is_valid(self, x, y):
         if 0 <= x < 8 and 0 <= y < 8:
@@ -111,46 +120,46 @@ class Game(object):
         return False
     
     def draw_board(self, screen):
-        pg.draw.rect(screen, white, [margin, margin, 8*square_size, 8*square_size])
+        pg.draw.rect(screen, white, [mg, mg, 8*sq_size, 8*sq_size])
         for i in range(8):
             for j in range(4):
-                pg.draw.rect(screen, greyblue, [self.get_original((j*2+(i+1)%2)), self.get_original(i), square_size, square_size])
+                pg.draw.rect(screen, greyblue, [self.real_xy((j*2+(i+1)%2)), self.real_xy(i), sq_size, sq_size])
         bdr = 4
-        pg.draw.rect(screen, black, [margin-bdr, margin-bdr, 8*square_size+bdr*2, 8*square_size+bdr*2], bdr)
+        pg.draw.rect(screen, black, [mg-bdr, mg-bdr, 8*sq_size+bdr*2, 8*sq_size+bdr*2], bdr)
 
     def draw_selected(self, screen):
         if self.selected:
             x = self.selected.x
             y = self.selected.y
-            pg.draw.rect(screen, pink, [self.get_original(x), self.get_original(y), square_size, square_size])
+            pg.draw.rect(screen, pink, [self.real_xy(x), self.real_xy(y), sq_size, sq_size])
 
             self.selected_movables = self.selected.get_movables()
             for mx, my in self.selected_movables:
                 if self.board[my][mx] and self.board[my][mx].kind == "king":
-                    pg.draw.rect(screen, yellow, [self.get_original(mx), self.get_original(my), square_size, square_size])
+                    pg.draw.rect(screen, yellow, [self.real_xy(mx), self.real_xy(my), sq_size, sq_size])
                 else:
-                    pg.draw.rect(screen, lightgreen, [self.get_original(mx), self.get_original(my), square_size, square_size])
+                    pg.draw.rect(screen, lightgreen, [self.real_xy(mx), self.real_xy(my), sq_size, sq_size])
 
             if self.selected.kind == "king":
                 self.castleables = self.selected.is_castleable()
                 if self.castleables:
                     for x, y in self.castleables:
-                        pg.draw.rect(screen, lime, [self.get_original(x), self.get_original(y), square_size, square_size])
-                        self.print_text("Castling", black, [self.get_original(x)+square_size//2, self.get_original(y)+square_size//2])
+                        pg.draw.rect(screen, lime, [self.real_xy(x), self.real_xy(y), sq_size, sq_size])
+                        self.print_text("Castling", black, [self.real_xy(x)+sq_size//2, self.real_xy(y)+sq_size//2])
             elif self.selected.kind == "pawn":
                 self.promotionables = self.selected.is_promotionable(self.selected_movables)
                 if self.log:
                     self.en_passant = self.selected.is_en_passantable(self.log[-1])
                     if self.en_passant:
                         x, y = self.en_passant
-                        pg.draw.rect(screen, lime, [self.get_original(x), self.get_original(y), square_size, square_size])
-                        self.print_text("En Passant", black, [self.get_original(x)+square_size//2, self.get_original(y)+square_size//2])
+                        pg.draw.rect(screen, lime, [self.real_xy(x), self.real_xy(y), sq_size, sq_size])
+                        self.print_text("En Passant", black, [self.real_xy(x)+sq_size//2, self.real_xy(y)+sq_size//2])
 
     def draw_pieces(self, screen):
         for x in range(8):
             for y in range(8):
                 if self.board[y][x]:
-                    self.screen.blit(self.board[y][x].img, (self.get_original(x), self.get_original(y)))
+                    self.screen.blit(self.board[y][x].img, (self.real_xy(x), self.real_xy(y)))
 
     def click(self, screen, pos):
         x, y = self.get_xy(pos)
@@ -168,24 +177,24 @@ class Game(object):
                         if self.selected.color: color = 6
                         else: color = 0
                         mx, my = pg.mouse.get_pos()
-                        nx = (mx - self.get_original(x))//(square_size//2)
-                        ny = (my - self.get_original(y))//(square_size//2)
+                        nx = (mx - self.real_xy(x))//(sq_size//2)
+                        ny = (my - self.real_xy(y))//(sq_size//2)
                         if (nx, ny) == (0, 0):
                             self.board[y][x] = Queen(self.board, x, y, self.selected.player, self.imgs[color+4])
-                            self.selected.player.piece_dict["pawns"].remove(self.selected)
-                            self.board[y][x].player.piece_dict["queens"].append(self.board[y][x])
+                            self.remove_from_dict(self.selected)
+                            self.add_to_dict(self.board[y][x])
                         elif (nx, ny) == (1, 0):
                             self.board[y][x] = Knight(self.board, x, y, self.selected.player, self.imgs[color+1])
-                            self.selected.player.piece_dict["pawns"].remove(self.selected)
-                            self.board[y][x].player.piece_dict["knights"].append(self.board[y][x])
+                            self.remove_from_dict(self.selected)
+                            self.add_to_dict(self.board[y][x])
                         elif (nx, ny) == (0, 1):
                             self.board[y][x] = Rook(self.board, x, y, self.selected.player, self.imgs[color+2])
-                            self.selected.player.piece_dict["pawns"].remove(self.selected)
-                            self.board[y][x].player.piece_dict["rooks"].append(self.board[y][x])
+                            self.remove_from_dict(self.selected)
+                            self.add_to_dict(self.board[y][x])
                         else:
                             self.board[y][x] = Bishop(self.board, x, y, self.selected.player, self.imgs[color+3])
-                            self.selected.player.piece_dict["pawns"].remove(self.selected)
-                            self.board[y][x].player.piece_dict["bishops"].append(self.board[y][x])
+                            self.remove_from_dict(self.selected)
+                            self.add_to_dict(self.board[y][x])
                         
                         self.turn = not self.turn
                         self.log.append([previous_location, (x, y), captured, "promotion"])
@@ -204,7 +213,7 @@ class Game(object):
                     self.selected.move(x, y)
                     captured = self.board[y+self.selected.get_dis(1)][x]
                     self.board[captured.y][captured.x] = None
-                    captured.player.piece_dict["pawns"].remove(captured)
+                    self.remove_from_dict(captured)
                     self.turn = not self.turn
                     self.log.append([previous_location, (x, y), captured, "en_passant"])
                 elif self.castleables and (x, y) in self.castleables:
@@ -219,11 +228,7 @@ class Game(object):
                     self.selected.move(x, y)
                     self.turn = not self.turn
                     self.log.append([previous_location, (x, y), "castling"])
-                self.selected = None
-                self.selected_movables = None
-                self.castleables = None
-                self.promotionables = None
-                self.en_passant = None
+                self.initialize_variables()
                 
         if not self.white_player.piece_dict["kings"]:
             self.winner = 1
@@ -235,7 +240,7 @@ class Game(object):
     def mouse_over(self, screen):
         x, y = self.get_xy(pg.mouse.get_pos())
         if self.is_valid(x, y):
-            pg.draw.rect(self.temp_screen, grey, [self.get_original(x), self.get_original(y), square_size, square_size])
+            pg.draw.rect(self.temp_screen, grey, [self.real_xy(x), self.real_xy(y), sq_size, sq_size])
             screen.blit(self.temp_screen, (0, 0))
 
     def mouse_over_above_pieces(self, screen):
@@ -243,18 +248,18 @@ class Game(object):
         if self.is_valid(x, y):
             if self.promotionables and (x, y) in self.promotionables and (not self.board[y][x] or self.board[y][x].kind != "king"):
                 mx, my = pg.mouse.get_pos()
-                nx = (mx - self.get_original(x))//(square_size//2)
-                ny = (my - self.get_original(y))//(square_size//2)
-                pg.draw.rect(screen, purple, [self.get_original(x)+square_size*nx//2, self.get_original(y)+square_size*ny//2, square_size//2, square_size//2])
+                nx = (mx - self.real_xy(x))//(sq_size//2)
+                ny = (my - self.real_xy(y))//(sq_size//2)
+                pg.draw.rect(screen, purple, [self.real_xy(x)+sq_size*nx//2, self.real_xy(y)+sq_size*ny//2, sq_size//2, sq_size//2])
 
                 imgs = []
                 if self.selected.color: color = "white"
                 else: color = "black"
                 for piece in ["queen", "knight", "rook", "bishop"]:
-                    imgs.append(pg.transform.scale(pg.image.load("Chess/images/"+color+"_"+piece+".png"), (square_size//2, square_size//2)))
+                    imgs.append(pg.transform.scale(pg.image.load("Chess/images/"+color+"_"+piece+".png"), (sq_size//2, sq_size//2)))
                 for i in range(2):
                     for j in range(2):
-                        self.screen.blit(imgs[i*2+j], (self.get_original(x)+square_size*j//2, self.get_original(y)+square_size*i//2))
+                        self.screen.blit(imgs[i*2+j], (self.real_xy(x)+sq_size*j//2, self.real_xy(y)+sq_size*i//2))
 
     def undo(self):
         if self.log:
@@ -269,7 +274,7 @@ class Game(object):
                     self.board[py][px].is_moved = False
                 self.board[cy][cx] = prev[2]
                 if prev[2]:
-                    prev[2].player.piece_dict[prev[2].kind+"s"].append(prev[2])
+                    self.add_to_dict(prev[2])
                     self.set_xy(cx, cy)
             elif prev[-1] == "promotion":
                 px, py = prev[0]
@@ -277,12 +282,12 @@ class Game(object):
                 if self.board[cy][cx].color: color = 6
                 else: color = 0
                 self.board[py][px] = Pawn(self.board, px, py, self.board[cy][cx].player, self.imgs[color])
-                self.board[py][px].player.piece_dict["pawns"].append(self.board[py][px])
+                self.add_to_dict(self.board[py][px])
                 self.board[py][px].is_moved = True
-                self.board[cy][cx].player.piece_dict[self.board[cy][cx].kind+"s"].remove(self.board[cy][cx])
+                self.remove_from_dict(self.board[cy][cx])
                 self.board[cy][cx] = prev[2]
                 if prev[2]:
-                    prev[2].player.piece_dict[prev[2].kind+"s"].append(prev[2])
+                    self.add_to_dict(prev[2])
                     self.set_xy(cx, cy)
             elif prev[-1] == "castling":
                 kx, ky, rx = prev[0]
@@ -308,13 +313,10 @@ class Game(object):
                 self.board[cy][cx] = None
                 captured = prev[2]
                 self.board[captured.y][captured.x] = captured
-                captured.player.piece_dict[captured.kind+"s"].append(captured)
+                self.add_to_dict(captured)
 
             self.turn = not self.turn
-            self.selected = None
-            self.selected_movables = None
-            self.castleables = None
-            self.en_passant = None
+            self.initialize_variables()
 
     def check_event(self, screen):
         for event in pg.event.get():
@@ -333,7 +335,7 @@ class Game(object):
                     self.is_gameover = False
             elif event.type == pg.QUIT:
                 self.end_game()
-                
+
     def play_game(self, screen):
         while True:
             while not self.is_gameover:
@@ -352,18 +354,14 @@ class Game(object):
                 screen.fill(background_color)
                 self.draw_board(screen)
                 self.draw_pieces(screen)
-                self.print_text(f"{['흑', '백'][self.winner-1]} 승리! 다시 시작하려면 아무 곳이나 우클릭하세요", white, [screen_size//2, screen_size-margin//2])
+                self.print_text(f"{['흑', '백'][self.winner-1]} 승리! 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
                 self.restart(screen)
                 pg.display.flip()
                 clock.tick(fps)
 
             self.winner = 0
             self.turn = True
-            self.selected = None
-            self.selected_movables = None
-            self.castleables = None
-            self.promotionables = None
-            self.en_passant = None
+            self.initialize_variables()
             self.board = [[None for y in range(8)] for x in range(8)]
             self.log = []
             self.set_players()
