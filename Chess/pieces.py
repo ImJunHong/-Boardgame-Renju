@@ -110,7 +110,7 @@ class Pawn(Piece):
         if log[-1] == "normal":
             py = log[0][1]
             cx, cy = log[1]
-            if abs(py-cy) == 2 and ((self.x, self.y) == (cx-1, cy) or (self.x, self.y) == (cx+1, cy)):
+            if self.board[cy][cx].kind == "pawn" and abs(py-cy) == 2 and ((self.x, self.y) == (cx-1, cy) or (self.x, self.y) == (cx+1, cy)):
                 return cx, (py+cy)//2
         return None
 

@@ -232,10 +232,10 @@ class Game(object):
                 
         if not self.white_player.piece_dict["kings"]:
             self.winner = 1
-            self.is_gameover = True
+            self.is_gameover = 1
         elif not self.black_player.piece_dict["kings"]:
             self.winner = 2
-            self.is_gameover = True
+            self.is_gameover = 1
 
     def mouse_over(self, screen):
         x, y = self.get_xy(pg.mouse.get_pos())
@@ -336,6 +336,10 @@ class Game(object):
             elif event.type == pg.QUIT:
                 self.end_game()
 
+    def print_message(self, screen):
+        if self.is_gameover == 1:
+            self.print_text(f"{['흑', '백'][self.winner-1]} 승리! 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
+
     def play_game(self, screen):
         while True:
             while not self.is_gameover:
@@ -354,7 +358,7 @@ class Game(object):
                 screen.fill(background_color)
                 self.draw_board(screen)
                 self.draw_pieces(screen)
-                self.print_text(f"{['흑', '백'][self.winner-1]} 승리! 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
+                self.print_message(screen)
                 self.restart(screen)
                 pg.display.flip()
                 clock.tick(fps)
