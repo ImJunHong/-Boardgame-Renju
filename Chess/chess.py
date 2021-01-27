@@ -237,6 +237,8 @@ class Game(object):
             self.winner = 2
             self.is_gameover = 1
 
+        self.check_draw()
+
     def mouse_over(self, screen):
         x, y = self.get_xy(pg.mouse.get_pos())
         if self.is_valid(x, y):
@@ -339,6 +341,38 @@ class Game(object):
     def print_message(self, screen):
         if self.is_gameover == 1:
             self.print_text(f"{['흑', '백'][self.winner-1]} 승리! 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
+        elif self.is_gameover == 2:
+            self.print_text(f"기물 부족 무승부. 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
+
+    def check_draw(self):
+        if self.is_impossibility_of_checkmate():
+            self.is_gameover = 2
+            return True
+        return False
+    
+    def is_impossibility_of_checkmate(self):
+        players = [self.white_player, self.black_player]
+        counts = []
+        for player in players:
+            count = ""
+            for piece in piece_list:
+                count += str(len(player.piece_dict[piece+"s"]))
+            counts.append(count)
+
+        if counts[0] == "000001" and counts[1] == "000001":
+            return True
+        elif (counts[0] == "000001" and counts[1] == "000101") or (counts[0] == "000101" and counts[1] == "000001"):
+            return True
+        elif (counts[0] == "000001" and counts[1] == "010001") or (counts[0] == "010001" and counts[1] == "000001"):
+            return True
+        elif counts[0] == "000101" and counts[1] == "000101":
+            white_bishop = self.white_player.piece_dict["bishops"][0]
+            black_bishop = self.black_player.piece_dict["bishops"][0]
+            if white_bishop.x % 2 == white_bishop.y % 2 and black_bishop.x % 2 != black_bishop.y % 2:
+                return True
+            elif white_bishop.x % 2 != white_bishop.y % 2 and black_bishop.x % 2 == black_bishop.y % 2:
+                return True
+        return False
 
     def play_game(self, screen):
         while True:
