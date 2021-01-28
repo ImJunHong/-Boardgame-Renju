@@ -64,6 +64,7 @@ class Game(object):
         self.initialize_variables()
         self.board = [[None for y in range(8)] for x in range(8)]
         self.log = []
+        self.board_log = []
         self.font = pg.font.SysFont("새굴림", 14)
         self.imgs = self.load_images()
         self.set_players()
@@ -198,6 +199,7 @@ class Game(object):
                         
                         self.turn = not self.turn
                         self.log.append([previous_location, (x, y), captured, "promotion"])
+                        self.add_board_log()
                     else:
                         captured = None
                         was_moved = True
@@ -208,6 +210,7 @@ class Game(object):
                         self.selected.move(x, y)
                         self.turn = not self.turn
                         self.log.append([previous_location, (x, y), captured, was_moved, "normal"])
+                        self.add_board_log()
                 elif (x, y) == self.en_passant:
                     previous_location = (self.selected.x, self.selected.y)
                     self.selected.move(x, y)
@@ -216,6 +219,7 @@ class Game(object):
                     self.remove_from_dict(captured)
                     self.turn = not self.turn
                     self.log.append([previous_location, (x, y), captured, "en_passant"])
+                    self.add_board_log()
                 elif self.castleables and (x, y) in self.castleables:
                     # 퀸 사이드 캐슬링
                     if x == 2:
@@ -228,8 +232,9 @@ class Game(object):
                     self.selected.move(x, y)
                     self.turn = not self.turn
                     self.log.append([previous_location, (x, y), "castling"])
+                    self.add_board_log()
                 self.initialize_variables()
-                
+
         if not self.white_player.piece_dict["kings"]:
             self.winner = 1
             self.is_gameover = 1
@@ -266,6 +271,7 @@ class Game(object):
     def undo(self):
         if self.log:
             prev = self.log.pop()
+            self.board_log.pop()
             if prev[-1] == "normal":
                 px, py = prev[0]
                 cx, cy = prev[1]
@@ -330,6 +336,29 @@ class Game(object):
             elif event.type == pg.QUIT:
                 self.end_game()
 
+    def add_board_log(self):
+        count = 0
+        board = []
+        en_passant = False # 앙파상 가능한 상황은 3수 동형반복이 불가능하므로 흑백 구분을 하지 않음
+        white_castling = False
+        black_castling = False
+        for y in range(8):
+            for x in range(8):
+                piece = self.board[y][x]
+                if piece:
+                    if not en_passant and piece.kind == "pawn" and piece.is_en_passantable(self.log[-1]):
+                        en_passant = True
+                    if piece.kind == "king" and piece.is_castleable():
+                        if piece.color:
+                            white_castling = True
+                        else:
+                            black_castling = True
+                    board.append(piece.kind)
+                    count += 1
+                else:
+                    board.append("")
+        self.board_log.append([count, board, not self.turn, en_passant, white_castling, black_castling])
+        
     def restart(self, screen):
         for event in pg.event.get():
             if event.type == pg.MOUSEBUTTONDOWN:
@@ -343,10 +372,15 @@ class Game(object):
             self.print_text(f"{['흑', '백'][self.winner-1]} 승리! 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
         elif self.is_gameover == 2:
             self.print_text(f"기물 부족 무승부. 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
+        elif self.is_gameover == 3:
+            self.print_text(f"3회 동형반복 무승부. 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
 
     def check_draw(self):
         if self.is_impossibility_of_checkmate():
             self.is_gameover = 2
+            return True
+        elif self.is_threefold_repetition():
+            self.is_gameover = 3
             return True
         return False
     
@@ -372,6 +406,15 @@ class Game(object):
                 return True
             elif white_bishop.x % 2 != white_bishop.y % 2 and black_bishop.x % 2 == black_bishop.y % 2:
                 return True
+        return False
+
+    def is_threefold_repetition(self):
+        count = 0
+        for log in self.board_log:
+            if log == self.board_log[-1]:
+                count += 1
+        if count == 3:
+            return True
         return False
 
     def play_game(self, screen):
@@ -402,6 +445,7 @@ class Game(object):
             self.initialize_variables()
             self.board = [[None for y in range(8)] for x in range(8)]
             self.log = []
+            self.board_log = []
             self.set_players()
 
         self.end_game()

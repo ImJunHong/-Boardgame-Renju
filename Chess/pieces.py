@@ -107,7 +107,7 @@ class Pawn(Piece):
         return promotionables
 
     def is_en_passantable(self, log):
-        if log[-1] == "normal":
+        if log and log[-1] == "normal":
             py = log[0][1]
             cx, cy = log[1]
             if self.board[cy][cx].kind == "pawn" and abs(py-cy) == 2 and ((self.x, self.y) == (cx-1, cy) or (self.x, self.y) == (cx+1, cy)):
