@@ -65,6 +65,7 @@ class Game(object):
         self.board = [[None for y in range(8)] for x in range(8)]
         self.log = []
         self.board_log = []
+        self.fifty_move_log = [0]
         self.font = pg.font.SysFont("새굴림", 14)
         self.imgs = self.load_images()
         self.set_players()
@@ -272,6 +273,7 @@ class Game(object):
         if self.log:
             prev = self.log.pop()
             self.board_log.pop()
+            self.fifty_move_log.pop()
             if prev[-1] == "normal":
                 px, py = prev[0]
                 cx, cy = prev[1]
@@ -374,13 +376,19 @@ class Game(object):
             self.print_text(f"기물 부족 무승부. 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
         elif self.is_gameover == 3:
             self.print_text(f"3회 동형반복 무승부. 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
+        elif self.is_gameover == 4:
+            self.print_text(f"50수 무승부. 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
 
     def check_draw(self):
+        self.count_fifty_move()
         if self.is_impossibility_of_checkmate():
             self.is_gameover = 2
             return True
         elif self.is_threefold_repetition():
             self.is_gameover = 3
+            return True
+        elif self.is_fifty_move():
+            self.is_gameover = 4
             return True
         return False
     
@@ -417,6 +425,19 @@ class Game(object):
             return True
         return False
 
+    def count_fifty_move(self):
+        if self.log and len(self.log) == len(self.fifty_move_log):
+            prev = self.log[-1]
+            if prev[-1] == "en_passant" or prev[-1] == "promotion" or prev[-1] == "normal" and (prev[2] or self.board[prev[1][1]][prev[1][0]].kind == "pawn"):
+                self.fifty_move_log.append(0)
+            else:
+                self.fifty_move_log.append(self.fifty_move_log[-1]+1)
+
+    def is_fifty_move(self):
+        if len(self.fifty_move_log) >= 100 and self.fifty_move_log[-1] == 100:
+            return True
+        return False
+
     def play_game(self, screen):
         while True:
             while not self.is_gameover:
@@ -446,6 +467,7 @@ class Game(object):
             self.board = [[None for y in range(8)] for x in range(8)]
             self.log = []
             self.board_log = []
+            self.fifty_move_log = [0]
             self.set_players()
 
         self.end_game()
