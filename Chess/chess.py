@@ -378,6 +378,8 @@ class Game(object):
             self.print_text(f"3회 동형반복 무승부. 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
         elif self.is_gameover == 4:
             self.print_text(f"50수 무승부. 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
+        elif self.is_gameover == 5:
+            self.print_text(f"스테일메이트. 다시 시작하려면 아무 곳이나 우클릭하세요", white, [scr_size//2, scr_size-mg//2])
 
     def check_draw(self):
         self.count_fifty_move()
@@ -390,6 +392,8 @@ class Game(object):
         elif self.is_fifty_move():
             self.is_gameover = 4
             return True
+        elif self.is_stalemate():
+            self.is_gameover = 5
         return False
     
     def is_impossibility_of_checkmate(self):
@@ -437,6 +441,45 @@ class Game(object):
         if len(self.fifty_move_log) >= 100 and self.fifty_move_log[-1] == 100:
             return True
         return False
+
+    def is_stalemate(self):
+        if self.turn: player = self.white_player
+        else: player = self.black_player
+        king = player.piece_dict["kings"][0]
+        # 1. 킹은 체크상태가 아니어야 함
+        if king.is_attacked(king.x, king.y):
+            return False
+        # 2. 킹의 이동 가능한 모든 자리가 공격받는 상태라 킹이 이동할 수 없어야 함
+        for x, y in king.get_movables():
+            if not king.is_attacked(x, y):
+                return False
+        for bx in range(8):
+            for by in range(8):
+                piece = self.board[by][bx]
+                if piece and piece.color == self.turn and piece.kind != "king":
+                    movables = piece.get_movables()
+                    if movables:
+                        for x, y in movables:
+                            is_king_attacked = False
+                            captured = None
+                            was_moved = True
+                            if self.board[y][x]: captured = self.board[y][x]
+                            if not piece.is_moved:
+                                was_moved = False
+                            piece.move(x, y)
+                            if not king.is_attacked(king.x, king.y):
+                                is_king_attacked = True
+                            self.board[by][bx] = piece
+                            self.set_xy(bx, by)
+                            if not was_moved:
+                                piece.is_moved = False
+                            self.board[y][x] = captured
+                            if captured:
+                                self.add_to_dict(captured)
+                            # 3. 나머지 기물들 중 움직일 수 있는 수를 두면 킹이 체크상태가 되어 이동할 수 없어야 함
+                            if is_king_attacked:
+                                return False
+        return True
 
     def play_game(self, screen):
         while True:
