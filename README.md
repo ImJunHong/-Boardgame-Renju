@@ -32,5 +32,8 @@
 - 프로모션
 <img src="https://user-images.githubusercontent.com/67459853/105721207-a8037080-5f67-11eb-840f-1c7553219b42.png">
 
-- 게임 종료
+- 게임 종료(승리)
 <img src="https://user-images.githubusercontent.com/67459853/105721214-a9349d80-5f67-11eb-8328-1937a476348b.png">
+
+- 게임 종료(무승부)
+<img src="https://user-images.githubusercontent.com/67459853/106470820-4ea9bd00-64e4-11eb-824c-71c1e1bb32da.png">
