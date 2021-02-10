@@ -20,3 +20,6 @@
 
 - 게임 종료(무승부)
 <img src="https://user-images.githubusercontent.com/67459853/106470820-4ea9bd00-64e4-11eb-824c-71c1e1bb32da.png">
+
+- 게임 종료(체크메이트)
+<img src="https://user-images.githubusercontent.com/67459853/107527595-4ba57f80-6bfc-11eb-8122-00862dc8f090.png">
