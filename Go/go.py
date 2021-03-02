@@ -52,9 +52,6 @@ class Game(object):
         for count in range(len(self.log)):
             x = self.log[count][0]
             y = self.log[count][1]
-            captured = None
-            if len(self.log[count]) == 3:
-                captured = self.log[count][2]
 
             if self.stones[y][x] == BLACK:
                 pg.draw.circle(screen, black, [margin+cell_size*x, margin+cell_size*y], stone_size)
@@ -69,7 +66,7 @@ class Game(object):
         board_x = (x-margin+cell_size//2)//cell_size
         board_y = (y-margin+cell_size//2)//cell_size
         color = len(self.log)%2+1
-        if is_valid(board_x, board_y) and self.stones[board_y][board_x] == EMPTY:
+        if self.stones[board_y][board_x] == EMPTY and is_valid(self.stones, board_x, board_y, color):
             self.stones[board_y][board_x] = color
             captured = capture(self.stones, color)
             if captured:

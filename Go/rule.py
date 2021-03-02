@@ -8,12 +8,27 @@ class Block(object):
         self.coords = []
         self.borders = []
 
-def is_valid(x, y):
-    if 0 <= x < MAX and 0 <= y < MAX:
+def is_valid(stones, x, y, color):
+    if not (0 <= x < MAX and 0 <= y < MAX):
+        return False
+    elif is_forbidden(stones, x, y, color):
+        return False
+    return True
+
+def is_forbidden(stones, x, y, color):
+    ENEMY = get_enemy(color)
+    stones[y][x] = color
+    captured = capture(stones, ENEMY, change_board=False)
+    stones[y][x] = EMPTY
+    if (x, y) in captured:
         return True
     return False
+    
+def get_enemy(color):
+    if color == BLACK: return WHITE
+    else: return BLACK
 
-def capture(stones, color):
+def capture(stones, color, change_board=True):
     blocks = search_blocks(stones, color)
     captured = []
     for block in blocks:
@@ -33,13 +48,13 @@ def capture(stones, color):
                 break
         if is_captured:
             for x, y in block.coords:
-                stones[y][x] = 0
+                if change_board:
+                    stones[y][x] = 0
                 captured.append((x, y))
     return captured
 
 def search_blocks(stones, color):
-    if color == BLACK: ENEMY = WHITE
-    else: ENEMY = BLACK
+    ENEMY = get_enemy(color)
     coords = [(x, y) for x in range(MAX) for y in range(MAX) if stones[y][x] == ENEMY]
     blocks = []
     while coords:
