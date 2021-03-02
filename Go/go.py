@@ -66,16 +66,18 @@ class Game(object):
         board_x = (x-margin+cell_size//2)//cell_size
         board_y = (y-margin+cell_size//2)//cell_size
         color = len(self.log)%2+1
-        if self.stones[board_y][board_x] == EMPTY and is_valid(self.stones, board_x, board_y, color):
+        if self.stones[board_y][board_x] == EMPTY and is_valid(self.stones, board_x, board_y, color, self.board_log):
             self.stones[board_y][board_x] = color
             captured = capture(self.stones, color)
             if captured:
                 self.log.append((board_x, board_y, captured))
             else:
                 self.log.append((board_x, board_y))
+            self.board_log.append(to_string(self.stones))
 
     def undo(self):
         if self.log:
+            self.board_log.pop()
             if len(self.log[-1]) == 2:
                 x, y = self.log.pop()
                 self.stones[y][x] = 0
@@ -108,6 +110,7 @@ class Game(object):
         while True:
             self.stones = [[0 for y in range(MAX)] for x in range(MAX)]
             self.log = []
+            self.board_log = []
             while not self.is_gameover:
                 screen.fill(background_color)
                 self.draw_board(screen)

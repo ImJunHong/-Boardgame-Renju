@@ -8,25 +8,52 @@ class Block(object):
         self.coords = []
         self.borders = []
 
-def is_valid(stones, x, y, color):
+def is_valid(stones, x, y, color, board_log):
     if not (0 <= x < MAX and 0 <= y < MAX):
         return False
-    elif is_forbidden(stones, x, y, color):
+    elif is_forbidden(stones, x, y, color, board_log):
         return False
     return True
 
-def is_forbidden(stones, x, y, color):
+def is_forbidden(stones, x, y, color, board_log):
+    # 패(覇)
+    if len(board_log) >= 2:
+        prev_board = board_log[-1]
+        ENEMY = get_enemy(color)
+        stones[y][x] = color
+        capture(stones, color)
+        curr_board = to_string(stones)
+        restore_board(stones, prev_board)
+        if curr_board == board_log[-2]:
+            return True
+
+    # suicide 금지
     ENEMY = get_enemy(color)
     stones[y][x] = color
     captured = capture(stones, ENEMY, change_board=False)
+    captured_enemy = capture(stones, color, change_board=False)
     stones[y][x] = EMPTY
     if (x, y) in captured:
+        if captured_enemy:
+            return False
         return True
     return False
     
 def get_enemy(color):
     if color == BLACK: return WHITE
     else: return BLACK
+
+def to_string(stones):
+        string = ""
+        for x in range(MAX):
+            for y in range(MAX):
+                string += str(stones[y][x])
+        return string
+
+def restore_board(stones, string):
+    for x in range(MAX):
+        for y in range(MAX):
+            stones[y][x] = int(string[x*MAX+y])
 
 def capture(stones, color, change_board=True):
     blocks = search_blocks(stones, color)
