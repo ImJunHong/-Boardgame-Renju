@@ -1,15 +1,83 @@
-empty = 0
-black = 1
-white = 2
-cell_amount = 19
+EMPTY = 0
+BLACK = 1
+WHITE = 2
+MAX = 19
 
-class Rule(object):
-    @staticmethod
-    def is_valid(x, y):
-        if 0 <= x < cell_amount and 0 <= y < cell_amount:
-            return True
-        return False
+class Block(object):
+    def __init__(self):
+        self.coords = []
+        self.borders = []
 
-    def __init__(self, stones, log):
-        self.stones = stones
-        self.log = log
+def is_valid(x, y):
+    if 0 <= x < MAX and 0 <= y < MAX:
+        return True
+    return False
+
+def capture(stones, color):
+    blocks = search_blocks(stones, color)
+    captured = []
+    for block in blocks:
+        is_captured = True
+        for x, y in block.borders:
+            if x != 0 and stones[y][x-1] == EMPTY:
+                is_captured = False
+                break
+            if x != MAX-1 and stones[y][x+1] == EMPTY:
+                is_captured = False
+                break
+            if y != 0 and stones[y-1][x] == EMPTY:
+                is_captured = False
+                break
+            if y != MAX-1 and stones[y+1][x] == EMPTY:
+                is_captured = False
+                break
+        if is_captured:
+            for x, y in block.coords:
+                stones[y][x] = 0
+                captured.append((x, y))
+    return captured
+
+def search_blocks(stones, color):
+    if color == BLACK: ENEMY = WHITE
+    else: ENEMY = BLACK
+    coords = [(x, y) for x in range(MAX) for y in range(MAX) if stones[y][x] == ENEMY]
+    blocks = []
+    while coords:
+        for x, y in coords:
+            if stones[y][x] == ENEMY:
+                block = Block()
+                coords.remove((x, y))
+                block.coords = [(x, y)]
+                search_stones(stones, coords, block, x, y)
+                blocks.append(block)
+                break
+    search_borders(stones, blocks)
+    return blocks
+
+def search_stones(stones, coords, block, x, y):
+    if x < MAX-1 and stones[y][x+1] == stones[y][x] and (x+1, y) in coords and (x+1, y) not in block.coords:
+        coords.remove((x+1, y))
+        block.coords.append((x+1, y))
+        search_stones(stones, coords, block, x+1, y)
+    
+    if y < MAX-1 and stones[y+1][x] == stones[y][x] and (x, y+1) in coords and (x, y+1) not in block.coords:
+        coords.remove((x, y+1))
+        block.coords.append((x, y+1))
+        search_stones(stones, coords, block, x, y+1)
+
+    if x > 0 and stones[y][x-1] == stones[y][x] and (x-1, y) in coords and (x-1, y) not in block.coords:
+        coords.remove((x-1, y))
+        block.coords.append((x-1, y))
+        search_stones(stones, coords, block, x-1, y)
+
+    if y > 0 and stones[y-1][x] == stones[y][x] and (x, y-1) in coords and (x, y-1) not in block.coords:
+        coords.remove((x, y-1))
+        block.coords.append((x, y-1))
+        search_stones(stones, coords, block, x, y-1)
+
+def search_borders(stones, blocks):
+    for block in blocks:
+        for x, y in block.coords:
+            if not (0 < x < MAX-1 and 0 < y < MAX-1) or\
+                not (stones[y][x+1] == stones[y][x] and stones[y][x-1] == stones[y][x] and stones[y+1][x] == stones[y][x] and stones[y-1][x] == stones[y][x]):
+                    block.borders.append((x, y))

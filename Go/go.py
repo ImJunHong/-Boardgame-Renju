@@ -1,6 +1,6 @@
 import pygame as pg
 import sys
-from rule import Rule
+from rule import *
 
 background_color = (204, 153,   0)
 black            = (  0,   0,   0)
@@ -9,8 +9,7 @@ red              = (255,   0,   0)
 
 cell_size = 30
 margin = 40
-cell_amount = 19
-screen_size = cell_size * (cell_amount - 1) + 2 * margin
+screen_size = cell_size * (MAX - 1) + 2 * margin
 stone_size = 13
 
 fps = 60
@@ -39,7 +38,7 @@ class Game(object):
         self.screen.blit(textSurface, textRect)
     
     def draw_board(self, screen):
-        for i in range(cell_amount):
+        for i in range(MAX):
             pg.draw.aaline(screen, black, [margin, margin+cell_size*i], [screen_size-margin, margin+cell_size*i])
             pg.draw.aaline(screen, black, [margin+cell_size*i, margin], [margin+cell_size*i, screen_size-margin])
         
@@ -51,28 +50,44 @@ class Game(object):
         
     def draw_stones(self, screen):
         for count in range(len(self.log)):
-            x, y = self.log[count]
+            x = self.log[count][0]
+            y = self.log[count][1]
+            captured = None
+            if len(self.log[count]) == 3:
+                captured = self.log[count][2]
 
-            if self.stones[y][x] == 1:
+            if self.stones[y][x] == BLACK:
                 pg.draw.circle(screen, black, [margin+cell_size*x, margin+cell_size*y], stone_size)
-            elif self.stones[y][x] == 2:
+            elif self.stones[y][x] == WHITE:
                 pg.draw.circle(screen, white, [margin+cell_size*x, margin+cell_size*y], stone_size)
-
-            self.print_text(str(count+1), count%2, (margin+cell_size*x, margin+cell_size*y))
+            
+            if self.stones[y][x] != EMPTY:
+                self.print_text(str(count+1), count%2, (margin+cell_size*x, margin+cell_size*y))
 
     def click(self, screen, pos):
         x, y = pos
         board_x = (x-margin+cell_size//2)//cell_size
         board_y = (y-margin+cell_size//2)//cell_size
         color = len(self.log)%2+1
-        if Rule.is_valid(board_x, board_y) and self.stones[board_y][board_x] == 0:
+        if is_valid(board_x, board_y) and self.stones[board_y][board_x] == EMPTY:
             self.stones[board_y][board_x] = color
-            self.log.append((board_x, board_y))
+            captured = capture(self.stones, color)
+            if captured:
+                self.log.append((board_x, board_y, captured))
+            else:
+                self.log.append((board_x, board_y))
 
     def undo(self):
         if self.log:
-            x, y = self.log.pop()
-            self.stones[y][x] = 0
+            if len(self.log[-1]) == 2:
+                x, y = self.log.pop()
+                self.stones[y][x] = 0
+            elif len(self.log[-1]) == 3:
+                x, y, captured = self.log.pop()
+                self.stones[y][x] = 0
+                color = (len(self.log)+1)%2+1
+                for cx, cy in captured:
+                    self.stones[cy][cx] = color
 
     def check_event(self, screen):
         for event in pg.event.get():
@@ -94,9 +109,8 @@ class Game(object):
                 
     def play_game(self, screen):
         while True:
-            self.stones = [[0 for y in range(cell_amount)] for x in range(cell_amount)]
+            self.stones = [[0 for y in range(MAX)] for x in range(MAX)]
             self.log = []
-            self.rule = Rule(self.stones, self.log)
             while not self.is_gameover:
                 screen.fill(background_color)
                 self.draw_board(screen)
