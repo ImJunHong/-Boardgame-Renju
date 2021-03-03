@@ -8,7 +8,7 @@ white            = (255, 255, 255)
 red              = (255,   0,   0)
 
 cell_size = 30
-margin = 40
+margin = 50
 screen_size = cell_size * (MAX - 1) + 2 * margin
 stone_size = 13
 
@@ -43,10 +43,18 @@ class Game(object):
             pg.draw.aaline(screen, black, [margin+cell_size*i, margin], [margin+cell_size*i, screen_size-margin])
         
         pg.draw.circle(screen, black, [margin+cell_size*3, margin+cell_size*3], 3)
-        pg.draw.circle(screen, black, [margin+cell_size*15, margin+cell_size*3], 3)
-        pg.draw.circle(screen, black, [margin+cell_size*3, margin+cell_size*15], 3)
-        pg.draw.circle(screen, black, [margin+cell_size*15, margin+cell_size*15], 3)
-        pg.draw.circle(screen, black, [margin+cell_size*9, margin+cell_size*9], 3)
+        pg.draw.circle(screen, black, [margin+cell_size*(MAX-4), margin+cell_size*3], 3)
+        pg.draw.circle(screen, black, [margin+cell_size*3, margin+cell_size*(MAX-4)], 3)
+        pg.draw.circle(screen, black, [margin+cell_size*(MAX-4), margin+cell_size*(MAX-4)], 3)
+        pg.draw.circle(screen, black, [margin+cell_size*((MAX-1)//2), margin+cell_size*((MAX-1)//2)], 3)
+
+        pg.draw.rect(screen, black, [0, 0, margin, margin//2])
+        self.print_text("계가", white, [margin//2, margin//4])
+
+        if self.is_gameover:
+            self.print_text(f"점수 [ 흑: {self.scores[BLACK]}집, 백: {self.scores[WHITE]}집 ]", black, [screen_size//2, margin//2])
+        else:
+            self.print_text(f"따낸 돌 [ 흑: {self.scores[BLACK]}, 백: {self.scores[WHITE]} ]", black, [screen_size//2, margin//2])
         
     def draw_stones(self, screen):
         for count in range(len(self.log)):
@@ -71,9 +79,21 @@ class Game(object):
             captured = capture(self.stones, color)
             if captured:
                 self.log.append((board_x, board_y, captured))
+                self.scores[color] += len(captured)
             else:
                 self.log.append((board_x, board_y))
             self.board_log.append(to_string(self.stones))
+        else:
+            if x <= margin and y <= margin//2:
+                territory = is_end(self.stones)
+                if territory:
+                    self.scores[BLACK] += territory[BLACK]
+                    self.scores[WHITE] += territory[WHITE] + 6.5
+                    if self.scores[BLACK] > self.scores[WHITE]:
+                        self.winner = BLACK
+                    else:
+                        self.winner = WHITE
+                    self.is_gameover = True
 
     def undo(self):
         if self.log:
@@ -85,6 +105,7 @@ class Game(object):
                 x, y, captured = self.log.pop()
                 self.stones[y][x] = 0
                 color = (len(self.log)+1)%2+1
+                self.scores[get_enemy(color)] -= len(captured)
                 for cx, cy in captured:
                     self.stones[cy][cx] = color
 
@@ -111,6 +132,7 @@ class Game(object):
             self.stones = [[0 for y in range(MAX)] for x in range(MAX)]
             self.log = []
             self.board_log = []
+            self.scores = [None, 0, 0]
             while not self.is_gameover:
                 screen.fill(background_color)
                 self.draw_board(screen)
@@ -122,7 +144,7 @@ class Game(object):
                 screen.fill(background_color)
                 self.draw_board(screen)
                 self.draw_stones(screen)
-                self.print_text(f"{['흑', '백'][self.winner-1]} 승리! 다시 시작하려면 아무 곳이나 우클릭하세요", black, [screen_size//2, screen_size-margin//2])
+                self.print_text(f"{['흑', '백'][self.winner-1]} {abs(self.scores[1]-self.scores[2])}집 승! 다시 시작하려면 아무 곳이나 우클릭하세요", black, [screen_size//2, screen_size-margin//2])
                 self.restart(screen)
                 pg.display.flip()
                 clock.tick(fps)
