@@ -1,7 +1,7 @@
 EMPTY = 0
 BLACK = 1
 WHITE = 2
-MAX = 9
+MAX = 19
 
 class Block(object):
     def __init__(self, x, y):

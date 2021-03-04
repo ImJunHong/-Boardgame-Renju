@@ -1,5 +1,6 @@
 import pygame as pg
 import sys
+import ctypes
 from rule import *
 
 background_color = (204, 153,   0)
@@ -94,6 +95,8 @@ class Game(object):
                     else:
                         self.winner = WHITE
                     self.is_gameover = True
+                else:
+                    ctypes.windll.user32.MessageBoxW(0, "아직 계가할 수 없습니다.", "계가 불가능", 0)
 
     def undo(self):
         if self.log:
