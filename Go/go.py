@@ -86,7 +86,7 @@ class Game(object):
             self.board_log.append(to_string(self.stones))
         else:
             if x <= margin and y <= margin//2:
-                territory = is_end(self.stones)
+                territory = is_countable(self.stones)
                 if territory:
                     self.scores[BLACK] += territory[BLACK]
                     self.scores[WHITE] += territory[WHITE] + 6.5

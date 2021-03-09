@@ -39,7 +39,7 @@ def is_forbidden(stones, x, y, color, board_log):
         return True
     return False
 
-def is_end(stones):
+def is_countable(stones):
     empty_blocks = search_blocks(stones, EMPTY)
     if len(empty_blocks) <= 1:
         return False
