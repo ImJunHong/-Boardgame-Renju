@@ -75,7 +75,7 @@ class Game(object):
         board_x = (x-margin+cell_size//2)//cell_size
         board_y = (y-margin+cell_size//2)//cell_size
         color = len(self.log)%2+1
-        if self.stones[board_y][board_x] == EMPTY and is_valid(self.stones, board_x, board_y, color, self.board_log):
+        if is_valid(self.stones, board_x, board_y, color, self.board_log):
             self.stones[board_y][board_x] = color
             captured = capture(self.stones, color)
             if captured:
@@ -89,7 +89,7 @@ class Game(object):
                 territory = is_countable(self.stones)
                 if territory:
                     self.scores[BLACK] += territory[BLACK]
-                    self.scores[WHITE] += territory[WHITE] + 6.5
+                    self.scores[WHITE] += territory[WHITE] + KOMI
                     if self.scores[BLACK] > self.scores[WHITE]:
                         self.winner = BLACK
                     else:

@@ -2,6 +2,7 @@ EMPTY = 0
 BLACK = 1
 WHITE = 2
 MAX = 19
+KOMI = 6.5
 
 class Block(object):
     def __init__(self, x, y):
@@ -9,7 +10,9 @@ class Block(object):
         self.borders = []
 
 def is_valid(stones, x, y, color, board_log):
-    if not (0 <= x < MAX and 0 <= y < MAX):
+    if stones[y][x] != EMPTY:
+        return False
+    elif not (0 <= x < MAX and 0 <= y < MAX):
         return False
     elif is_forbidden(stones, x, y, color, board_log):
         return False
