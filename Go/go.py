@@ -10,7 +10,7 @@ red              = (255,   0,   0)
 
 cell_size = 30
 margin = 50
-screen_size = cell_size * (MAX - 1) + 2 * margin
+scr_size = cell_size * (MAX - 1) + 2 * margin
 stone_size = 13
 
 fps = 60
@@ -18,7 +18,7 @@ clock = pg.time.Clock()
 
 def main():
     pg.init()
-    screen = pg.display.set_mode([screen_size, screen_size])
+    screen = pg.display.set_mode([scr_size, scr_size])
     pg.display.set_caption("Go")
     game = Game(screen)
 
@@ -40,8 +40,8 @@ class Game(object):
     
     def draw_board(self, screen):
         for i in range(MAX):
-            pg.draw.aaline(screen, black, [margin, margin+cell_size*i], [screen_size-margin, margin+cell_size*i])
-            pg.draw.aaline(screen, black, [margin+cell_size*i, margin], [margin+cell_size*i, screen_size-margin])
+            pg.draw.aaline(screen, black, [margin, margin+cell_size*i], [scr_size-margin, margin+cell_size*i])
+            pg.draw.aaline(screen, black, [margin+cell_size*i, margin], [margin+cell_size*i, scr_size-margin])
         
         pg.draw.circle(screen, black, [margin+cell_size*3, margin+cell_size*3], 3)
         pg.draw.circle(screen, black, [margin+cell_size*(MAX-4), margin+cell_size*3], 3)
@@ -53,9 +53,9 @@ class Game(object):
         self.print_text("계가", white, [margin//2, margin//4])
 
         if self.is_gameover:
-            self.print_text(f"점수 [ 흑: {self.scores[BLACK]}집, 백: {self.scores[WHITE]}집 ]", black, [screen_size//2, margin//2])
+            self.print_text(f"점수 [ 흑: {self.scores[BLACK]}집, 백: {self.scores[WHITE]}집 ]", black, [scr_size//2, margin//2])
         else:
-            self.print_text(f"따낸 돌 [ 흑: {self.scores[BLACK]}, 백: {self.scores[WHITE]} ]", black, [screen_size//2, margin//2])
+            self.print_text(f"따낸 돌 [ 흑: {self.scores[BLACK]}, 백: {self.scores[WHITE]} ]", black, [scr_size//2, margin//2])
         
     def draw_stones(self, screen):
         for count in range(len(self.log)):
@@ -147,7 +147,7 @@ class Game(object):
                 screen.fill(background_color)
                 self.draw_board(screen)
                 self.draw_stones(screen)
-                self.print_text(f"{['흑', '백'][self.winner-1]} {abs(self.scores[1]-self.scores[2])}집 승! 다시 시작하려면 아무 곳이나 우클릭하세요", black, [screen_size//2, screen_size-margin//2])
+                self.print_text(f"{['흑', '백'][self.winner-1]} {abs(self.scores[1]-self.scores[2])}집 승! 다시 시작하려면 아무 곳이나 우클릭하세요", black, [scr_size//2, scr_size-margin//2])
                 self.restart(screen)
                 pg.display.flip()
                 clock.tick(fps)
