@@ -71,11 +71,11 @@ def is_countable(stones):
                     return False
     return count_territory(stones, empty_blocks)
 
-def count_territory(stones, blocks):
+def count_territory(stones, empty_blocks):
     scores = [None, 0, 0]
-    for block in blocks:
+    for empty_block in empty_blocks:
         first_color = 0
-        for x, y in block.borders:
+        for x, y in empty_block.borders:
             if x != 0 and stones[y][x-1] > EMPTY:
                 if first_color == 0:
                     first_color = stones[y][x-1]
@@ -92,7 +92,7 @@ def count_territory(stones, blocks):
                 if first_color == 0:
                     first_color = stones[y+1][x]
                     break
-        scores[first_color] += len(block.coords)
+        scores[first_color] += len(empty_block.coords)
     return scores
 
 def get_enemy(color):
